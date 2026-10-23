@@ -128,27 +128,16 @@ class Grille():
 
         -------
         """
-        """# Liste des cases vides
-        vides = []
-        for i in range(self.taille[0]):
-            for j in range(self.taille[1]):
-                case = self.grille[i,j]
-                if isinstance(case, CaseVide) and case.nbr_bombes_voisines == 0:
-                    vides.append(case)
+        # Liste des cases vides
+        case_vides = [case for ligne in self.grille for case in ligne
+                      if isinstance(case, CaseVide)
+                      and case.nbr_bombes_voisines == 0]
+        if not case_vides:
+            case_vides = [case for ligne in self.grille for case in ligne
+                          if isinstance(case, CaseVide)]
+        if case_vides:
+            random.choice(case_vides).decouvrir()
         
-        # Définition de la case initiale découverte            
-        if len(vides) > 0:
-            case_depart = random.choice(vides)
-        else:
-            voisines = []
-            for i in range(self.taille[0]):
-                for j in range(self.taille[1]):
-                    case = self.grille[i,j]
-                    if isinstance(case, CaseVide):
-                        voisines.append(case)    
-            case_depart = random.choice(voisines)
-        
-        case_depart.decouvrir()   """
 
     def compter_drapeaux(self):
         pass                     
