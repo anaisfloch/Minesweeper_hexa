@@ -17,6 +17,8 @@ from abc import abstractmethod
 
 class Grille():
     
+    config = {0: ((8, 8), 10), 1: ((16, 16), 40), 2: ((16, 30), 99)}
+    
     def __init__(self, difficulte):
         """Initialise la grille de jeu du démineur avec une certaine 
         taille et un nombre de bombes en fonction de la difficulté choisie, 
@@ -40,19 +42,12 @@ class Grille():
         self.cases_decouvertes = 0
         
         # Choix de config en fonction de la difficulté
-        if difficulte == 0:
-            self.taille = (8,8)
-            self.bombe = 10
-        elif difficulte == 1:
-            self.taille = (16,16)
-            self.bombe = 40
-        elif difficulte == 2:
-            self.taille = (16,30)
-            self.bombe = 99
-        else:
-            raise ValueError("Le code de difficulté doit être de 0 (facile), 1 (moyen) ou 2 (difficile).")
+        if difficulte not in self.config:
+            raise ValueError("Difficulté invalide : choisir 0, 1 ou 2.")
+        self.taille, self.bombe = self.config[difficulte]
+        self.cases_decouvertes = 0
          
-        # Création d'un tableau objet    
+        """# Création d'un tableau objet    
         self.grille = np.empty(self.taille, dtype = object)
         
         # Grille préalable
@@ -82,7 +77,11 @@ class Grille():
                     
         # Découverte initiale automatique de cases
         self.decouverte_initiale()
-        self.verifier_victoire()
+        self.verifier_victoire()"""
+        
+    def voisins(self, ligne, colonne):
+        """Retourne les coordonnées des six voisins hexagonaux."""
+        pass
                     
     def afficher(self):
         """
@@ -90,7 +89,7 @@ class Grille():
 
         -------
         """
-        for i in range(self.taille[0]):
+        """for i in range(self.taille[0]):
             ligne = []
             for j in range(self.taille[1]):
                 c = self.grille[i,j]
@@ -105,7 +104,7 @@ class Grille():
                 else:
                     ligne.append("0")
             print(" ".join(ligne))
-        print()  
+        print()  """
         
             
     def afficher_solution(self):
@@ -134,7 +133,7 @@ class Grille():
 
         -------
         """
-        # Liste des cases vides
+        """# Liste des cases vides
         vides = []
         for i in range(self.taille[0]):
             for j in range(self.taille[1]):
@@ -154,7 +153,10 @@ class Grille():
                         voisines.append(case)    
             case_depart = random.choice(voisines)
         
-        case_depart.decouvrir()                        
+        case_depart.decouvrir()   """
+
+    def compter_drapeaux(self):
+        pass                     
          
     def verifier_victoire(self):
         """
@@ -262,12 +264,12 @@ class CaseVide(Case):
             return
             
         # Sinon découvrir les cases vides adjointes
-        x, y = self.position
+        """x, y = self.position
         for i in range(x-1, x+2):
             for j in range(y-1, y+2):
                 if (0 <= i < self.grille.taille[0]) and (0 <= j < self.grille.taille[1]) and (i,j) != (x,y):
                     self.grille.grille[i,j].decouvrir()
-                    
+          """          
         
     
     def ajouter_drapeau(self):
@@ -283,14 +285,14 @@ class CaseVide(Case):
         voisins : int
             Nombre de bombes présentes dans le voisinage immédiat.
         """
-        x, y = self.position
+        """x, y = self.position
         voisins = 0
         for i in range(x-1, x+2):
             for j in range(y-1, y+2):
                 if (0 <= i < self.grille.taille[0]) and (0 <= j < self.grille.taille[1]) and (i,j) != (x,y):
                     if isinstance(self.grille.grille[i,j], CaseBombe):
                         voisins += 1
-        return voisins
+        return voisins"""
                 
     
     
