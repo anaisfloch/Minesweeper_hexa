@@ -47,37 +47,32 @@ class Grille():
         self.taille, self.bombe = self.config[difficulte]
         self.cases_decouvertes = 0
          
-        """# Création d'un tableau objet    
-        self.grille = np.empty(self.taille, dtype = object)
+        # Création d'un tableau objet : Grille préalable
+        self.grille = [[None for _ in range(self.taille[1])] for _ in range(self.taille[0])]
         
-        # Grille préalable
-        nb_case = self.taille[0] * self.taille [1]
-        place_bombe = np.random.choice(nb_case, self.bombe, replace = False)
-        colonnes = self.taille[1]
-        grille_test = np.zeros(self.taille, dtype = bool)
-        for i in place_bombe:
-            l = i // colonnes
-            c = i % colonnes
-            grille_test[l,c] = True        
+        positions = [(l, c)
+                     for l in range(self.taille[0])
+                     for c in range(self.taille[1])]
         
         # Création des cases
-        for i in range(self.taille[0]):
-            for j in range(self.taille[1]):
-                if grille_test[i,j]:
-                    self.grille[i, j] = CaseBombe((i,j), self)
-                else :
-                    self.grille[i, j] = CaseVide((i,j), self, voisins_calcules = False)
-                    
+        for l, c in random.sample(positions, self.bombe):
+            self.grille[l][c] = CaseBombe((l, c), self)
+            
+        
+        for l in range(self.taille[0]):
+            for c in range(self.taille[1]):
+                if self.grille[l][c] is None:
+                    self.grille[l][c] = CaseVide((l, c), self)
+        
         # Calcul des bombes voisines
-        for i in range(self.taille[0]):
-            for j in range(self.taille[1]):
-                case = self.grille[i,j]
+        for r in range(self.taille[0]):
+            for c in range(self.taille[1]):
+                case = self.grille[r][c]
                 if isinstance(case, CaseVide):
                     case.nbr_bombes_voisines = case.get_nbr_bomb()
-                    
-        # Découverte initiale automatique de cases
+
         self.decouverte_initiale()
-        self.verifier_victoire()"""
+        self.verifier_victoire()
         
     def voisins(self, ligne, colonne):
         """Retourne les coordonnées des six voisins hexagonaux."""
@@ -113,7 +108,7 @@ class Grille():
 
         -------
         """
-        print("Soluce")
+        """print("Soluce")
         for i in range(self.taille[0]):
             ligne = []
             for j in range(self.taille[1]):
@@ -125,7 +120,7 @@ class Grille():
                 else:
                     ligne.append("?")
             print(" ".join(ligne))
-        print() 
+        print() """
     
     def decouverte_initiale(self):
         """
@@ -164,10 +159,10 @@ class Grille():
 
         -------
         """
-        total_cases = self.taille[0]*self.taille[1]
+        """total_cases = self.taille[0]*self.taille[1]
         if self.cases_decouvertes >= total_cases - self.bombe:
             return self.victoire()
-        return False
+        return False"""
             
     def victoire(self):
         """
