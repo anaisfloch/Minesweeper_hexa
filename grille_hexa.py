@@ -64,7 +64,7 @@ class Grille():
                 if self.grille[l][c] is None:
                     self.grille[l][c] = CaseVide((l, c), self)
         
-        # Calcul des bombes voisines
+        # Calcul des indices des bombes voisines
         for r in range(self.taille[0]):
             for c in range(self.taille[1]):
                 case = self.grille[r][c]
@@ -74,9 +74,19 @@ class Grille():
         self.decouverte_initiale()
         self.verifier_victoire()
         
+        
+    ########## TEST POUR DEFINITION DE LA GRILLE AVEC DECALAGE DES CASES ########    
     def voisins(self, ligne, colonne):
         """Retourne les coordonnées des six voisins hexagonaux."""
-        pass
+        directions = [(-1, 0), (1,0), (-1,1), (0, -1), (-1, 1), (0, 1)]
+        voisins = []
+        for tmpl, tmpc in directions:
+            nl, nc = ligne + tmpl, colonne + tmpc
+            # définir la condition d'ajout
+            voisins.append((nl, nc))
+            return voisins
+            
+            
                     
     def afficher(self):
         """
