@@ -234,14 +234,12 @@ class CaseBombe(Case):
     
 class CaseVide(Case):
     
-    def __init__(self, position, grille, drapeau = 0, voisins_calcules = True):
-        super().__init__(position, grille, drapeau)
-        self.nbr_bombes_voisines = 0 if voisins_calcules else None
-        if voisins_calcules:
-            self.nbr_bombes_voisines = self.get_nbr_bomb()
+    def __init__(self, position, grille):
+        super().__init__(position, grille)
+        self.nbr_bombes_voisines = 0
         
     def decouvrir(self):
-        if self.drapeau == 1 or self.decouverte :
+        if self.drapeau or self.decouverte :
             return
         
         self.decouverte = True
@@ -257,15 +255,11 @@ class CaseVide(Case):
             print(f"Case {self.position} : {self.nbr_bombes_voisines} bombes voisines.")
             return
             
-        # Sinon découvrir les cases vides adjointes
-        """x, y = self.position
-        for i in range(x-1, x+2):
-            for j in range(y-1, y+2):
-                if (0 <= i < self.grille.taille[0]) and (0 <= j < self.grille.taille[1]) and (i,j) != (x,y):
-                    self.grille.grille[i,j].decouvrir()
-          """          
+        # Sinon découvrir les cases vides adjacentes
+        if self.nbr_bombes_voisines == 0:
+            for r, c in self.grille.voisins(self.position):
+                self.grille[r][c].decouvrir()
         
-    
     def ajouter_drapeau(self):
         self.drapeau = 1 - self.drapeau
     
@@ -273,20 +267,11 @@ class CaseVide(Case):
     def get_nbr_bomb(self):
         """
         Donne le nombre de bombes présentes dans le voisinage immédiat de la case sélectionnée.
-
-        Returns
         -------
         voisins : int
             Nombre de bombes présentes dans le voisinage immédiat.
         """
-        """x, y = self.position
-        voisins = 0
-        for i in range(x-1, x+2):
-            for j in range(y-1, y+2):
-                if (0 <= i < self.grille.taille[0]) and (0 <= j < self.grille.taille[1]) and (i,j) != (x,y):
-                    if isinstance(self.grille.grille[i,j], CaseBombe):
-                        voisins += 1
-        return voisins"""
+        return sum((self.grille.grille[r][c], CaseBombe) for r, c in self.grille.voisins)
                 
     
     
