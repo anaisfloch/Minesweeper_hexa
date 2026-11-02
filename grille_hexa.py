@@ -5,8 +5,6 @@ Created on Fri Oct 24 09:05:11 2025
 @author: afloch
 """
 
-#################################### ADAPTER A HEXAGONAL GRID ###################################
-
 ### Imports ###
 import sys
 import random
@@ -23,15 +21,7 @@ class Grille():
         """Initialise la grille de jeu du démineur avec une certaine 
         taille et un nombre de bombes en fonction de la difficulté choisie, 
         et dévoile automatiquement une partie de la grille.
-        
-        Paramètres
         ---------
-        grille : array
-            Matrice vide représentant la grille de jeu.
-        taille :  tuple
-            Longeur et largeur de la grille.
-        bombe : int
-            Nombre de bombes présentes dans la grille.
         difficulte : int
             Codes de difficulté :
                 0 - facile, 8x8, 10 bombes
@@ -39,7 +29,6 @@ class Grille():
                 2 - difficile, 30x16, 99 bombes
         """
         self.difficulte = difficulte
-        self.cases_decouvertes = 0
         
         # Choix de config en fonction de la difficulté
         if difficulte not in self.config:
@@ -50,11 +39,9 @@ class Grille():
         # Création d'un tableau objet : Grille préalable
         self.grille = [[None for _ in range(self.taille[1])] for _ in range(self.taille[0])]
         
-        positions = [(l, c)
-                     for l in range(self.taille[0])
-                     for c in range(self.taille[1])]
+        positions = [(l, c) for l in range(self.taille[0]) for c in range(self.taille[1])]
         
-        # Création des cases
+        # Création des cases bombes
         for l, c in random.sample(positions, self.bombe):
             self.grille[l][c] = CaseBombe((l, c), self)
             
@@ -78,96 +65,52 @@ class Grille():
     ########## TEST POUR DEFINITION DE LA GRILLE AVEC DECALAGE DES CASES ########    
     def voisins(self, ligne, colonne):
         """Retourne les coordonnées des six voisins hexagonaux."""
+        # penser à décaler d'une demi hauteur cases paires et impaires
         directions = [(-1, 0), (1,0), (-1,1), (0, -1), (-1, 1), (0, 1)]
         voisins = []
         for tmpl, tmpc in directions:
             nl, nc = ligne + tmpl, colonne + tmpc
             # définir la condition d'ajout
             voisins.append((nl, nc))
-            return voisins
+        return voisins
             
-            
-                    
+                      
     def afficher(self):
         """
         Affiche visuellement les cases de la grille et leur état en temps réel.
-
-        -------
         """
-        """for i in range(self.taille[0]):
-            ligne = []
-            for j in range(self.taille[1]):
-                c = self.grille[i,j]
-                if c.drapeau == 1 :
-                    ligne.append("*")
-                elif not c.decouverte:
-                    ligne.append("_")
-                elif isinstance(c, CaseBombe):
-                    ligne.append("BOUM")
-                elif isinstance(c, CaseVide) and c.nbr_bombes_voisines > 0:
-                    ligne.append(str(c.nbr_bombes_voisines))
-                else:
-                    ligne.append("0")
-            print(" ".join(ligne))
-        print()  """
+        pass
         
             
     def afficher_solution(self):
         """
         Affiche visuellement la solution de la grille.
-
-        -------
         """
-        """print("Soluce")
-        for i in range(self.taille[0]):
-            ligne = []
-            for j in range(self.taille[1]):
-                c = self.grille[i,j]
-                if isinstance(c, CaseBombe):
-                    ligne.append("*")
-                elif isinstance(c, CaseVide) and (c.nbr_bombes_voisines >= 0):
-                    ligne.append(str(c.nbr_bombes_voisines))
-                else:
-                    ligne.append("?")
-            print(" ".join(ligne))
-        print() """
+        pass
     
     def decouverte_initiale(self):
         """
         Initialise la partie en découvrant des cases automatiquement.
-
-        -------
         """
         # Liste des cases vides
-        case_vides = [case for ligne in self.grille for case in ligne
-                      if isinstance(case, CaseVide)
-                      and case.nbr_bombes_voisines == 0]
+        case_vides = [case for ligne in self.grille for case in ligne if isinstance(case, CaseVide)and case.nbr_bombes_voisines == 0]
         if not case_vides:
-            case_vides = [case for ligne in self.grille for case in ligne
-                          if isinstance(case, CaseVide)]
+            case_vides = [case for ligne in self.grille for case in ligne if isinstance(case, CaseVide)]
         if case_vides:
             random.choice(case_vides).decouvrir()
         
-
     def compter_drapeaux(self):
-        pass                     
+        return sum(case.drapeau for ligne in self.grille for case in ligne)                     
          
     def verifier_victoire(self):
         """
         Vérifie que toutes les cases vides ne soient pas découvertes.
-
-        -------
         """
-        """total_cases = self.taille[0]*self.taille[1]
-        if self.cases_decouvertes >= total_cases - self.bombe:
-            return self.victoire()
-        return False"""
+        pass
             
     def victoire(self):
         """
         Renvoie un message de victoire suivi de la fermeture du jeu.
-
-        -------
         """
         print("\n Victoire !")
         self.afficher_solution()
@@ -204,7 +147,7 @@ class Case():
 
 
 class CaseBombe(Case):
-    
+
     def __init__(self, position, grille):
         super().__init__(position, grille)
         
@@ -215,10 +158,16 @@ class CaseBombe(Case):
            
          
 class CaseVide(Case):
-    
+
     def __init__(self, position, grille):
         super().__init__(position, grille)
         self.nbr_bombes_voisines = 0
+
+    def get_nbr_bomb(self):
+        """
+        Donne le nombre de bombes présentes dans le voisinage immédiat de la case sélectionnée.
+        """
+        return sum((self.grille.grille[r][c], CaseBombe) for r, c in self.grille.voisins)
         
     def decouvrir(self):
         if self.drapeau or self.decouverte :
@@ -228,26 +177,14 @@ class CaseVide(Case):
         self.grille.cases_decouvertes += 1
         self.grille.verifier_victoire()
         
-        # Au cas-où ça n'a pas marché avant
+        """# Au cas-où ça n'a pas marché avant
         if self.nbr_bombes_voisines is None:
-            self.nbr_bombes_voisines = self.get_nbr_bomb()
+            self.nbr_bombes_voisines = self.get_nbr_bomb()"""
         
-        # Si bombes voisines
-        if self.nbr_bombes_voisines > 0:
-            print(f"Case {self.position} : {self.nbr_bombes_voisines} bombes voisines.")
-            return
-            
-        # Puis découvrir les cases vides adjacentes
+        # Propagation depuis cases vides sans bombe voisine
         if self.nbr_bombes_voisines == 0:
             for r, c in self.grille.voisins(self.position):
                 self.grille[r][c].decouvrir()
         
-
-    def get_nbr_bomb(self):
-        """
-        Donne le nombre de bombes présentes dans le voisinage immédiat de la case sélectionnée.
-        """
-        return sum((self.grille.grille[r][c], CaseBombe) for r, c in self.grille.voisins)
-                
-    
+   
     
