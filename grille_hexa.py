@@ -179,21 +179,11 @@ class Grille():
 
 class Case():
     
-    def __init__(self, position, grille, drapeau = 0):
+    def __init__(self, position, grille):
         """Initialise une case de la grille de jeu du démineur à une position 
         particulière dans une grille.
-        
-        Paramètres
-        ---------
-        position : tuple
-            Coordonnées de la case dans la grille de jeu.
-        grille : array
-            Matrice à laquelle la case est rattachée.
-        drapeau : int
-            Indique la présence ou non d'un drapeau sur la case. Par défaut 
-            égal à 0.
         """
-        self.drapeau = drapeau
+        self.drapeau = False
         self.grille = grille
         self.position = position
         self.decouverte = False
@@ -202,36 +192,28 @@ class Case():
     def decouvrir(self):
         """
         Révéler la case sélectionnée, sauf si elle présente un drapeau.
-
         """
         pass
     
-    @abstractmethod
     def ajouter_drapeau(self):
         """
-        Ajouter un drapeau sur la case sélectionnée ou le retirer si un drapeau est déjà présent.
-
+        Ajouter un drapeau sur la case sélectionnée ou le retirer si déjà présent.
         """
-        pass
+        if not self.decouverte:
+            self.drapeau = not self.drapeau
 
 
 class CaseBombe(Case):
     
-    def __init__(self, position, grille, drapeau = 0):
-        super().__init__(position, grille, drapeau)
+    def __init__(self, position, grille):
+        super().__init__(position, grille)
         
     def decouvrir(self):
         # Ne peut être découverte si marquée par un drapeau
-        if self.drapeau == 1:
-            return
-        self.decouverte = True
-        return
+        if not self.drapeau:
+            self.decouverte = True
            
-            
-    def ajouter_drapeau(self):
-        self.drapeau = 1 - self.drapeau
-        
-    
+         
 class CaseVide(Case):
     
     def __init__(self, position, grille):
@@ -255,21 +237,15 @@ class CaseVide(Case):
             print(f"Case {self.position} : {self.nbr_bombes_voisines} bombes voisines.")
             return
             
-        # Sinon découvrir les cases vides adjacentes
+        # Puis découvrir les cases vides adjacentes
         if self.nbr_bombes_voisines == 0:
             for r, c in self.grille.voisins(self.position):
                 self.grille[r][c].decouvrir()
         
-    def ajouter_drapeau(self):
-        self.drapeau = 1 - self.drapeau
-    
-    
+
     def get_nbr_bomb(self):
         """
         Donne le nombre de bombes présentes dans le voisinage immédiat de la case sélectionnée.
-        -------
-        voisins : int
-            Nombre de bombes présentes dans le voisinage immédiat.
         """
         return sum((self.grille.grille[r][c], CaseBombe) for r, c in self.grille.voisins)
                 
