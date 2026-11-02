@@ -1,204 +1,224 @@
 # -*- coding: utf-8 -*-
-#################################### ADAPTER A HEXAGONAL GRID ###################################
 
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
-import sys
-from grille import Grille, CaseBombe, CaseVide
+import math
+from PyQt5 import QtCore, QtGui, QtWidgets
+from grille_hexa import Grille, CaseBombe, CaseVide
 
 
-class Ui_Dialog(object):
-    def setupUi(self, Dialog):
-        Dialog.setObjectName("Dialog")
-        Dialog.resize(1110, 878)
+class HexaBoard(QtWidgets.QWidget):
+    """Plateau d'hexagones sans espaces entre les cases.
+    """
+    case_cliquee = QtCore.pyqtSignal(int, int, int)  # ligne, colonne, bouton souris
         
-        # Zone Grille
-        self.gridLayoutWidget = QtWidgets.QWidget(Dialog)
-        self.gridLayoutWidget.setGeometry(QtCore.QRect(180, 140, 731, 661))
-        self.gridLayoutWidget.setObjectName("gridLayoutWidget")
-        self.grid = QtWidgets.QGridLayout(self.gridLayoutWidget)
-        self.grid.setContentsMargins(0, 0, 0, 0)
-        self.grid.setSpacing(2)
-        self.grid.setObjectName("grid")
-        
-        # Zone titre
-        self.title_text = QtWidgets.QLabel(Dialog)
-        self.title_text.setGeometry(QtCore.QRect(40, 20, 331, 51))
-        font = QtGui.QFont()
-        font.setFamily("Yu Gothic UI")
-        font.setPointSize(21)
-        font.setBold(True)
-        font.setWeight(75)
-        self.title_text.setFont(font)
-        self.title_text.setText("Minesweeper Game")
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.grille_obj = None
+        self.radius = 20.0
+        self.margin = 8.0
+        self.setMouseTracking(True)
 
-        
-        ### Boite de difficulté
-        # Texte
-        self.difficulty_text = QtWidgets.QLabel(Dialog)
-        self.difficulty_text.setGeometry(QtCore.QRect(40, 80, 100, 31)) #150 pour la largeur de la boite text
-        font = QtGui.QFont("Yu Gothic UI", 11, QtGui.QFont.Bold)
-        font.setFamily("Yu Gothic UI")
-        self.difficulty_text.setFont(font)
-        self.difficulty_text.setText("Difficulté :")
-        
-        # Choix difficulté
-        self.difficulty_box_choice = QtWidgets.QComboBox(Dialog)
-        self.difficulty_box_choice.setGeometry(QtCore.QRect(200, 90, 200, 22))
-        self.difficulty_box_choice.setObjectName("difficulty_box_choice")
-        self.difficulty_box_choice.addItems(["Facile","Moyen", "Difficile"])
-        
-        # Bouton valider
-        self.button_validate_difficulty = QtWidgets.QPushButton(Dialog)
-        self.button_validate_difficulty.setGeometry(QtCore.QRect(400, 90, 51, 23))
-        self.button_validate_difficulty.setObjectName("button_validate_difficulty")
+    def set_grille(self, grille):
+        self.grille_obj = grille
+        self.update_size()
+        self.update()
 
-        self.retranslateUi(Dialog)
-        QtCore.QMetaObject.connectSlotsByName(Dialog)
-        
+    def centre(self, ligne, colonne):
+        # calcul du centre de l'hexagone pour mise en quinconce 
+        x = self.margin + self.radius + colonne * 1.5 * self.radius
+        y = (self.margin + math.sqrt(3) * self.radius / 2 + ligne * math.sqrt(3) * self.radius + (colonne % 2) * math.sqrt(3) * self.radius / 2)
+        return QtCore.QPointF(x, y)
 
-    def retranslateUi(self, Dialog):
-        _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Démineur"))
-        self.title_text.setText(_translate("Dialog", "Minesweeper Game"))
-        self.difficulty_text.setText(_translate("Dialog", "Difficulté :"))
-        self.button_validate_difficulty.setText(_translate("Dialog", "OK"))
+    def hexagones(self, ligne, colonne):
+        # calcul des coordonnées des sommets
+        centre = self.centre(ligne, colonne)
+        points = []
+        for angle in range(0, 360, 60):
+            rad = math.radians(angle)
+            points.append(QtCore.QPointF(centre.x() + self.radius * math.cos(rad), centre.y() + self.radius * math.sin(rad)))
+        return QtGui.QPolygonF(points)
+
+    def update_size(self):
+        if self.grille_obj is None:
+            return
+        rows, cols = self.grille_obj.taille
+        width = self.margin * 2 + self.radius * 2 + max(0, cols - 1) * 1.5 * self.radius
+        height = (self.margin * 2 + math.sqrt(3) * self.radius + max(0, rows - 1) * math.sqrt(3) * self.radius + math.sqrt(3) * self.radius / 2)
+        self.setMinimumSize(math.ceil(width), math.ceil(height))
+        self.resize(math.ceil(width), math.ceil(height))
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setFont(QtGui.QFont("Arial", 9, QtGui.QFont.Bold))
+        if self.grille_obj is None:
+            return
+
+        # plus il y a de bombes voisines, plus la couleur est inquiétante
+        couleurs_chiffres = {1: "#1565C0", 2: "#2E7D32", 3: "#C62828", 4: "#6A1B9A", 5: "#AD1457", 6: "#00838F"}
+        for r in range(self.grille_obj.taille[0]):
+            for c in range(self.grille_obj.taille[1]):
+                case = self.grille_obj.grille[r][c]
+                poly = self.hexagones(r, c)
+                if case.drapeau:
+                    fond = QtGui.QColor("#FFCDD2")
+                elif case.decouverte:
+                    fond = QtGui.QColor("#E8F5E9")
+                else:
+                    fond = QtGui.QColor("#B0BEC5")
+                painter.setBrush(fond)
+                painter.setPen(QtGui.QPen(QtGui.QColor("#37474F"), 1.2))
+                painter.drawPolygon(poly)
+
+                texte = ""
+                couleur_texte = QtGui.QColor("#263238")
+                if case.drapeau:
+                    texte = "d"
+                    couleur_texte = QtGui.QColor("#C62828")
+                elif case.decouverte and isinstance(case, CaseBombe):
+                    texte = "BOUM"
+                    couleur_texte = QtGui.QColor("#B71C1C")
+                elif case.decouverte and isinstance(case, CaseVide) and case.nbr_bombes_voisines > 0:
+                    texte = str(case.nbr_bombes_voisines)
+                    couleur_texte = QtGui.QColor(couleurs_chiffres.get(case.nbr_bombes_voisines, "#263238"))
+
+                if texte:
+                    painter.setPen(couleur_texte)
+                    painter.drawText(poly.boundingRect(), QtCore.Qt.AlignCenter, texte)
+
+    def mousePressEvent(self, event):
+        if self.grille_obj is None:
+            return
+        # pointage compliqué pcq cases trop petites
+        for r in range(self.grille_obj.taille[0]):
+            for c in range(self.grille_obj.taille[1]):
+                if self.hexagones(r, c).containsPoint(event.localPos(), QtCore.Qt.OddEvenFill):
+                    if event.button() == QtCore.Qt.LeftButton:
+                        self.case_cliquee.emit(r, c, 1)
+                    elif event.button() == QtCore.Qt.RightButton:
+                        self.case_cliquee.emit(r, c, 2)
+                    return
 
 
-
-
-class Window(QtWidgets.QDialog, Ui_Dialog):
+class Window(QtWidgets.QDialog):
     def __init__(self):
         super().__init__()
-        self.setupUi(self)
+        self.setWindowTitle("Démineur hexagonal")
+        self.resize(1000, 760)
         self.grille_obj = None
         self.partie_terminee = False
+        self._message_en_cours = False
+
+        self.title_label = QtWidgets.QLabel("Démineur hexagonal")
+        self.title_label.setStyleSheet("font-size: 22px; font-weight: bold;")
+        self.difficulty_box_choice = QtWidgets.QComboBox()
+        self.difficulty_box_choice.addItems(["Facile (8 × 8)", "Moyen (16 × 16)", "Difficile (16 × 30)"])
+        self.button_validate_difficulty = QtWidgets.QPushButton("Nouvelle partie")
         self.button_validate_difficulty.clicked.connect(self.start_game)
+        self.flags_label = QtWidgets.QLabel("Drapeaux : 0 / 10")
+        self.status_label = QtWidgets.QLabel("Choisis une difficulté puis lance une partie.")
         
-        
+        self.board = HexaBoard()
+        self.board.case_cliquee.connect(self.handle_click)
+        self.scroll = QtWidgets.QScrollArea()
+        self.scroll.setWidget(self.board)
+        self.scroll.setWidgetResizable(False)
+        self.scroll.setAlignment(QtCore.Qt.AlignCenter)
+
+        header = QtWidgets.QHBoxLayout()
+        header.addWidget(QtWidgets.QLabel("Difficulté :"))
+        header.addWidget(self.difficulty_box_choice)
+        header.addWidget(self.button_validate_difficulty)
+        header.addStretch(1)
+        header.addWidget(self.flags_label)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(self.title_label)
+        layout.addLayout(header)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.scroll, 1)
+
+        self.start_game()
+
     def start_game(self):
         difficulte = self.difficulty_box_choice.currentIndex()
         self.partie_terminee = False
         self.grille_obj = Grille(difficulte)
-        
-        # Nettoyer grille précédente
-        while self.grid.count():
-            item = self.grid.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.setEnabled(False)
-                widget.hide()
-                widget.setParent(None)
-                widget.deleteLater()
-                
-        
-        # Reconstruire grille        
-        for i in range(self.grille_obj.taille[0]):
-            for j in range(self.grille_obj.taille[1]):
-                button = QtWidgets.QPushButton("")
-                button.setFixedSize(35, 35)
-                button.setEnabled(True)
-                button.setStyleSheet("background-color: lightgray;")
-                button.clicked.connect(lambda _, x=i, y=j: self.handle_left_click(x, y))
-                button.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-                button.customContextMenuRequested.connect(lambda _, x=i, y=j: self.handle_right_click(x, y))
-                self.grid.addWidget(button, i, j)
-                
-        self.update_cases()
+        self.board.set_grille(self.grille_obj)
+        self.flags_label.setText(f"Drapeaux : 0 / {self.grille_obj.bombe}")
+        self.status_label.setText("Clic gauche : révéler ; clic droit : poser/retirer un drapeau")
+        self.scroll.horizontalScrollBar().setValue(0)
+        self.scroll.verticalScrollBar().setValue(0)
         
                 
-    def handle_left_click(self, x, y):
-        if self.partie_terminee:
+    def handle_click(self, ligne, colonne, bouton_souris):
+        if self.partie_terminee or self.grille_obj is None:
             return
-        
-        case = self.grille_obj.grille[x, y]
+        case = self.grille_obj.grille[ligne][colonne]
+
+        if bouton_souris == 2:
+            if not case.decouverte:
+                case.ajouter_drapeau()
+                self.flags_label.setText(f"Drapeaux : {self.grille_obj.compter_drapeaux()} / {self.grille_obj.bombe}")
+                self.board.update()
+            return
+
+        if case.drapeau or case.decouverte:
+            return
         if isinstance(case, CaseBombe):
+            case.decouvrir()
             self.reveal_all()
-            self.message("Défaite", "PERDUUUUUU ça a explosé ou quoi")
             self.partie_terminee = True
+            self.status_label.setText("Partie terminée : tu as déclenché une bombe.")
+            self.board.update()
+            self.message("Défaite", "BOUM PERDU")
             return
-        
         
         case.decouvrir()
-        self.update_cases()
-            
+        self.board.update()
         if self.check_victoire():
             self.reveal_all()
-            self.message("Victoire", "GG Well played")
             self.partie_terminee = True
-            
-        
-    def handle_right_click(self, x, y):
-        if self.partie_terminee:
-            return
-        
-        case = self.grille_obj.grille[x, y] 
-        if case.decouverte:
-            return
-        
-        case.drapeau = 1 - case.drapeau
-        self.update_cases()
-        
-    def update_cases(self):
-        for i in range(self.grille_obj.taille[0]):
-            for j in range(self.grille_obj.taille[1]):
-                bouton = self.grid.itemAtPosition(i, j).widget()
-                case = self.grille_obj.grille[i, j]
-                
-                if case.drapeau == 1:
-                    bouton.setText("D")
-                    bouton.setStyleSheet("background-color: #FF0000; font-weight: bold; ")
-                elif not case.decouverte:
-                    bouton.setText("")
-                elif isinstance(case, CaseBombe):
-                    bouton.setText("BOUM")
-                    bouton.setStyleSheet("background-color: #FF0000; font-weight: bold; ")
-                elif case.nbr_bombes_voisines > 0:
-                    bouton.setText(str(case.nbr_bombes_voisines))
-                    bouton.setStyleSheet("background-color: #C8E6C9; font-weight: bold; ")
-                else :
-                    bouton.setText("")
-                    bouton.setStyleSheet("background-color: #C8E6C9; font-weight: bold; ")
+            self.status_label.setText("GG Well played Toutes les cases sans bombe sont découvertes.")
+            self.board.update()
+            self.message("Victoiry Royal")
                     
     def check_victoire(self):
-        total_cases = self.grille_obj.taille[0] * self.grille_obj.taille[1]
-        bombes = self.grille_obj.bombe
-        decouvertes = 0
-        
-        for i in range(self.grille_obj.taille[0]):
-            for j in range(self.grille_obj.taille[1]):
-                case = self.grille_obj.grille[i, j]
-                if case.decouverte:
-                    decouvertes += 1
-        return decouvertes == (total_cases - bombes)
-    
-    
+        for ligne in self.grille_obj.grille:
+            for case in ligne:
+                if isinstance(case, CaseVide) and not case.decouverte:
+                    return False
+        return True 
         
     def reveal_all(self):
-        for i in range(self.grille_obj.taille[0]):
-            for j in range(self.grille_obj.taille[1]):
-                case = self.grille_obj.grille[i, j]
+        for ligne in self.grille_obj.grille:
+            for case in ligne:
                 case.decouverte = True
-        self.update_cases()
-        self.partie_terminee = True
-        
+        self.board.update()        
         
     def message(self, titre, texte):
+        if self._message_en_cours:
+            return
+        self._message_en_cours = True
         message = QtWidgets.QMessageBox(self)
         message.setWindowTitle(titre)
         message.setText(texte)
         message.setIcon(QtWidgets.QMessageBox.Information)
-        
         rejouer = message.addButton("Rejouer", QtWidgets.QMessageBox.AcceptRole)
         quitter = message.addButton("Quitter", QtWidgets.QMessageBox.RejectRole)
-        
         message.exec_()
-        
         bouton_clique = message.clickedButton()
-        
+        self._message_en_cours = False
+
         if bouton_clique == rejouer:
-            QtCore.QTimer.singleShot(0, self.start_game())
+            QtCore.QTimer.singleShot(0, self.start_game)
         elif bouton_clique == quitter:
             self.close()
         
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    window = Window()
+    window.show()
+    sys.exit(app.exec_())
     
         
