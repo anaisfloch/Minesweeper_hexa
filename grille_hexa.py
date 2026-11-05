@@ -62,16 +62,19 @@ class Grille():
         self.verifier_victoire()
         
         
-    ########## TEST POUR DEFINITION DE LA GRILLE AVEC DECALAGE DES CASES ########    
     def voisins(self, ligne, colonne):
         """Retourne les coordonnées des six voisins hexagonaux."""
-        # penser à décaler d'une demi hauteur cases paires et impaires
-        directions = [(-1, 0), (1,0), (-1,1), (0, -1), (-1, 1), (0, 1)]
+        # Utiliser la parité des colonnes pour compter les voisins
+        if colonne % 2 == 0:
+            directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, 0)]
+        else:
+            directions = [(-1, 0), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
         voisins = []
         for tmpl, tmpc in directions:
             nl, nc = ligne + tmpl, colonne + tmpc
             # définir la condition d'ajout
-            voisins.append((nl, nc))
+            if 0 <= nl < self.taille[0] and 0 <= nc < self.taille[1]:
+                voisins.append((nl, nc))
         return voisins
             
                       
@@ -93,7 +96,7 @@ class Grille():
         Initialise la partie en découvrant des cases automatiquement.
         """
         # Liste des cases vides
-        case_vides = [case for ligne in self.grille for case in ligne if isinstance(case, CaseVide)and case.nbr_bombes_voisines == 0]
+        case_vides = [case for ligne in self.grille for case in ligne if isinstance(case, CaseVide) and case.nbr_bombes_voisines == 0]
         if not case_vides:
             case_vides = [case for ligne in self.grille for case in ligne if isinstance(case, CaseVide)]
         if case_vides:
@@ -167,7 +170,7 @@ class CaseVide(Case):
         """
         Donne le nombre de bombes présentes dans le voisinage immédiat de la case sélectionnée.
         """
-        return sum((self.grille.grille[r][c], CaseBombe) for r, c in self.grille.voisins)
+        return sum(isinstance(self.grille.grille[r][c], CaseBombe) for r, c in self.grille.voisins(*self.position))
         
     def decouvrir(self):
         if self.drapeau or self.decouverte :
@@ -177,14 +180,10 @@ class CaseVide(Case):
         self.grille.cases_decouvertes += 1
         self.grille.verifier_victoire()
         
-        """# Au cas-où ça n'a pas marché avant
-        if self.nbr_bombes_voisines is None:
-            self.nbr_bombes_voisines = self.get_nbr_bomb()"""
-        
         # Propagation depuis cases vides sans bombe voisine
         if self.nbr_bombes_voisines == 0:
-            for r, c in self.grille.voisins(self.position):
-                self.grille[r][c].decouvrir()
+            for r, c in self.grille.voisins(*self.position):
+                self.grille.grille[r][c].decouvrir()
         
    
     
