@@ -72,10 +72,10 @@ class HexaBoard(QtWidgets.QWidget):
                 texte = ""
                 couleur_texte = QtGui.QColor("#263238")
                 if case.drapeau:
-                    texte = "d"
+                    texte = "⚐"
                     couleur_texte = QtGui.QColor("#C62828")
                 elif case.decouverte and isinstance(case, CaseBombe):
-                    texte = "BOUM"
+                    texte = "☠"
                     couleur_texte = QtGui.QColor("#B71C1C")
                 elif case.decouverte and isinstance(case, CaseVide) and case.nbr_bombes_voisines > 0:
                     texte = str(case.nbr_bombes_voisines)
@@ -114,7 +114,12 @@ class Window(QtWidgets.QDialog):
         self.difficulty_box_choice.addItems(["Facile (8 × 8)", "Moyen (16 × 16)", "Difficile (16 × 30)"])
         self.button_validate_difficulty = QtWidgets.QPushButton("Nouvelle partie")
         self.button_validate_difficulty.clicked.connect(self.start_game)
-        self.flags_label = QtWidgets.QLabel("Drapeaux : 0 / 10")
+        self.flags_label = QtWidgets.QLabel("Bombes restantes : 10")
+        self.timer_label = QtWidgets.QLabel("Temps : 00: 00")
+        self.temps_ecoule = 0
+        self.timer_start = False
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.actualiser_timer)
         self.status_label = QtWidgets.QLabel("Choisis une difficulté puis lance une partie.")
         
         self.board = HexaBoard()
@@ -130,6 +135,7 @@ class Window(QtWidgets.QDialog):
         header.addWidget(self.button_validate_difficulty)
         header.addStretch(1)
         header.addWidget(self.flags_label)
+        header.addWidget(self.timer_label)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(self.title_label)
@@ -140,12 +146,16 @@ class Window(QtWidgets.QDialog):
         self.start_game()
 
     def start_game(self):
+        self.timer.stop()
+        self.timer_start = False
+        self.temps_ecoule = 0
+        self.timer_label.setText("Temps : 00: 00")
         difficulte = self.difficulty_box_choice.currentIndex()
         self.partie_terminee = False
         self.grille_obj = Grille(difficulte)
         self.board.set_grille(self.grille_obj)
-        self.flags_label.setText(f"Drapeaux : 0 / {self.grille_obj.bombe}")
-        self.status_label.setText("Clic gauche : révéler ; clic droit : poser/retirer un drapeau")
+        self.flags_label.setText(f"Bombes restantes : {self.grille_obj.bombe}")
+        self.status_label.setText("Clic gauche : révéler ; clic droit : drapeau")
         self.scroll.horizontalScrollBar().setValue(0)
         self.scroll.verticalScrollBar().setValue(0)
         
@@ -164,10 +174,15 @@ class Window(QtWidgets.QDialog):
 
         if case.drapeau or case.decouverte:
             return
+        self.start_timer()
+        self.grille_obj.securite_premier_clic(ligne, colonne)
+        case = self.grille_obj.grille[ligne][colonne]
+        
         if isinstance(case, CaseBombe):
             case.decouvrir()
             self.reveal_all()
             self.partie_terminee = True
+            self.timer.stop()
             self.status_label.setText("Partie terminée : tu as déclenché une bombe.")
             self.board.update()
             self.message("Défaite", "BOUM PERDU")
@@ -178,9 +193,10 @@ class Window(QtWidgets.QDialog):
         if self.check_victoire():
             self.reveal_all()
             self.partie_terminee = True
+            self.timer.stop()
             self.status_label.setText("GG Well played Toutes les cases sans bombe sont découvertes.")
             self.board.update()
-            self.message("Victoiry Royal")
+            self.message("Victoiry Royal", f"Tu as gagné en {self.temps_ecoule} secondes")
                     
     def check_victoire(self):
         for ligne in self.grille_obj.grille:
@@ -213,6 +229,17 @@ class Window(QtWidgets.QDialog):
             QtCore.QTimer.singleShot(0, self.start_game)
         elif bouton_clique == quitter:
             self.close()
+            
+    def actualiser_timer(self):
+        self.temps_ecoule += 1 
+        m = self.temps_ecoule // 60
+        s = self.temps_ecoule % 60
+        self.timer_label.setText(f"Temps : {m}:{s}")
+        
+    def start_timer(self):
+        if not self.timer_start:
+            self.timer_start = True
+            self.timer.start(1000)
         
 if __name__ == "__main__":
     import sys
