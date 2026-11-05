@@ -13,9 +13,10 @@ class HexaBoard(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.grille_obj = None
-        self.radius = 20.0
-        self.margin = 8.0
+        self.radius = 30.0
+        self.margin = 12.0
         self.setMouseTracking(True)
+        self.setAutoFillBackground(True)
 
     def set_grille(self, grille):
         self.grille_obj = grille
@@ -49,7 +50,8 @@ class HexaBoard(QtWidgets.QWidget):
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setFont(QtGui.QFont("Arial", 9, QtGui.QFont.Bold))
+        painter.fillRect(self.rect(),QtGui.QColor("#263238"))
+        painter.setFont(QtGui.QFont("Arial", 13, QtGui.QFont.Bold))
         if self.grille_obj is None:
             return
 
@@ -128,6 +130,41 @@ class Window(QtWidgets.QDialog):
         self.scroll.setWidget(self.board)
         self.scroll.setWidgetResizable(False)
         self.scroll.setAlignment(QtCore.Qt.AlignCenter)
+        self.setStyleSheet("""
+        QDialog {
+        background-color: #263238;
+        }
+
+        QLabel {
+        color: #ECEFF1;
+        font-size: 14px;
+        padding: 5px;
+        }
+
+        QPushButton {
+        background-color: #26A69A;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 16px;
+        font-weight: bold;
+        }
+
+        QPushButton:hover {
+        background-color: #4DB6AC;
+        }
+
+        QComboBox {
+        background-color: #455A64;
+        color: white;
+        border-radius: 6px;
+        padding: 6px;
+        }
+        
+        QScrollArea {
+        border: none;
+        background-color: #263238;
+        }""")
 
         header = QtWidgets.QHBoxLayout()
         header.addWidget(QtWidgets.QLabel("Difficulté :"))
