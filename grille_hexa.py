@@ -6,9 +6,7 @@ Created on Fri Oct 24 09:05:11 2025
 """
 
 ### Imports ###
-import sys
 import random
-import numpy as np
 from abc import abstractmethod
 
 ### Définition d'une grille de jeu ###

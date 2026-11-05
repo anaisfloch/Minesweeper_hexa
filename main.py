@@ -43,7 +43,7 @@ def jouer():
         except ValueError:
             print("Entrée invalide, recommence avec des nombres.")
             
-        case = g.grille[x,y]
+        case = g.grille[x][y]
         
         if action == "r":
             case.decouvrir()

@@ -205,7 +205,8 @@ class Window(QtWidgets.QDialog):
         if bouton_souris == 2:
             if not case.decouverte:
                 case.ajouter_drapeau()
-                self.flags_label.setText(f"Drapeaux : {self.grille_obj.compter_drapeaux()} / {self.grille_obj.bombe}")
+                bomb_restantes = (self.grille_obj.bombe - self.grille_obj.compter_drapeaux())
+                self.flags_label.setText(f"Bombes restantes : {bomb_restantes}")
                 self.board.update()
             return
 
